@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Leave Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">
+        {% if is_approver %}Leave Requests Administration{% else %}My Leave Applications{% endif %}
+      </h3>
+      <p class="text-muted small mb-0">
+        {% if is_approver %}
+          Review, approve, or reject employee leave applications across the company.
+        {% else %}
+          Submit leave requests and monitor your application status.
+        {% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'employees:list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-people-fill me-1"></i> Employees
+      </a>
+      <a href="{% url 'employees:leave_apply' %}" class="btn btn-primary fw-semibold shadow-sm">
+        <i class="bi bi-calendar-plus-fill me-1"></i> Apply for Leave
+      </a>
+    </div>
+  </div>
+
+  <!-- Status Filter Tabs -->
+  <div class="card card-custom p-2 mb-4">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'employees:leave_list' %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-light text-secondary border{% endif %}">
+        All Requests <span class="badge bg-secondary ms-1">{{ total_count }}</span>
+      </a>
+      <a href="{% url 'employees:leave_list' %}?status=PENDING" class="btn btn-sm {% if status_filter == 'PENDING' %}btn-warning text-dark{% else %}btn-light text-secondary border{% endif %}">
+        Pending Approval <span class="badge bg-warning text-dark ms-1">{{ pending_count }}</span>
+      </a>
+      <a href="{% url 'employees:leave_list' %}?status=APPROVED" class="btn btn-sm {% if status_filter == 'APPROVED' %}btn-success{% else %}btn-light text-secondary border{% endif %}">
+        Approved <span class="badge bg-success ms-1">{{ approved_count }}</span>
+      </a>
+      <a href="{% url 'employees:leave_list' %}?status=REJECTED" class="btn btn-sm {% if status_filter == 'REJECTED' %}btn-danger{% else %}btn-light text-secondary border{% endif %}">
+        Rejected <span class="badge bg-danger ms-1">{{ rejected_count }}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Leave Applications Table -->
+  <div class="card card-custom overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Leave Type</th>
+            <th>Date Range</th>
+            <th>Duration</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th>Review Notes</th>
+            {% if is_approver %}
+            <th class="text-end">Action</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in leave_requests %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.85rem;">
+                  {{ req.employee.user.username|make_list|first|upper }}
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">{{ req.employee.full_name }}</div>
+                  <div class="text-muted small font-monospace">{{ req.employee.employee_id }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border">{{ req.get_leave_type_display }}</span>
+            </td>
+            <td>
+              <div class="small fw-semibold text-dark">{{ req.start_date|date:"M d, Y" }} &rarr; {{ req.end_date|date:"M d, Y" }}</div>
+              <div class="text-muted" style="font-size: 0.72rem;">Applied {{ req.applied_at|date:"M d, Y" }}</div>
+            </td>
+            <td>
+              <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">
+                {{ req.duration_days }} Day{{ req.duration_days|pluralize }}
+              </span>
+            </td>
+            <td>
+              <span class="text-secondary small text-truncate d-inline-block" style="max-width: 220px;" data-bs-toggle="tooltip" title="{{ req.reason }}">
+                {{ req.reason }}
+              </span>
+            </td>
+            <td>
+              <span class="badge {{ req.status_badge_class }}">{{ req.get_status_display }}</span>
+            </td>
+            <td>
+              {% if req.admin_remarks %}
+                <span class="small text-muted text-truncate d-inline-block" style="max-width: 180px;" data-bs-toggle="tooltip" title="{{ req.admin_remarks }}">
+                  {{ req.admin_remarks }}
+                </span>
+                {% if req.reviewed_by %}
+                  <div class="text-muted" style="font-size: 0.68rem;">By {{ req.reviewed_by.get_full_name|default:req.reviewed_by.username }}</div>
+                {% endif %}
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            {% if is_approver %}
+            <td class="text-end">
+              {% if req.status == 'PENDING' %}
+                {% if req.employee.user == request.user %}
+                  <span class="badge bg-light text-muted border" data-bs-toggle="tooltip" title="Employees cannot approve their own requests">Own Request</span>
+                {% else %}
+                  <a href="{% url 'employees:leave_review' req.pk %}" class="btn btn-sm btn-outline-primary fw-semibold">
+                    <i class="bi bi-pencil-square me-1"></i> Review
+                  </a>
+                {% endif %}
+              {% else %}
+                <a href="{% url 'employees:leave_review' req.pk %}" class="btn btn-sm btn-light border text-secondary" data-bs-toggle="tooltip" title="Update Decision">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="{% if is_approver %}8{% else %}7{% endif %}" class="text-center py-5 text-muted">
+              <i class="bi bi-calendar2-x fs-1 d-block mb-2 text-secondary"></i>
+              No leave applications found in this category.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

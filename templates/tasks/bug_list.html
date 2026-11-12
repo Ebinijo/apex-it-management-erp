@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Bug Issues Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Bug Issues & Quality Assurance</h3>
+      <p class="text-muted small mb-0">Log software defects, triage severity levels, allocate engineers, and track resolution lifecycles.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'tasks:list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-check2-square me-1"></i> Sprint Tasks
+      </a>
+      <a href="{% url 'tasks:bug_report' %}" class="btn btn-danger fw-semibold shadow-sm">
+        <i class="bi bi-bug-fill me-1"></i> Report New Bug
+      </a>
+    </div>
+  </div>
+
+  <!-- Status Tabs -->
+  <div class="card card-custom p-2 mb-4">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'tasks:bug_list' %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-light text-secondary border{% endif %}">
+        All Bugs <span class="badge bg-secondary ms-1">{{ total_bugs }}</span>
+      </a>
+      <a href="{% url 'tasks:bug_list' %}?status=OPEN" class="btn btn-sm {% if status_filter == 'OPEN' %}btn-danger{% else %}btn-light text-secondary border{% endif %}">
+        Open Defects <span class="badge bg-danger ms-1">{{ open_count }}</span>
+      </a>
+      <a href="{% url 'tasks:bug_list' %}?status=IN_PROGRESS" class="btn btn-sm {% if status_filter == 'IN_PROGRESS' %}btn-warning text-dark{% else %}btn-light text-secondary border{% endif %}">
+        In Progress <span class="badge bg-warning text-dark ms-1">{{ inprogress_count }}</span>
+      </a>
+      <a href="{% url 'tasks:bug_list' %}?status=RESOLVED" class="btn btn-sm {% if status_filter == 'RESOLVED' %}btn-success{% else %}btn-light text-secondary border{% endif %}">
+        Resolved <span class="badge bg-success ms-1">{{ resolved_count }}</span>
+      </a>
+      <a href="{% url 'tasks:bug_list' %}?status=CLOSED" class="btn btn-sm {% if status_filter == 'CLOSED' %}btn-secondary{% else %}btn-light text-secondary border{% endif %}">
+        Closed <span class="badge bg-secondary ms-1">{{ closed_count }}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Card -->
+  <div class="card card-custom p-3 mb-4">
+    <form method="GET" class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <div class="input-group">
+          <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search by bug title, ID, description, project...">
+        </div>
+      </div>
+      <div class="col-md-3">
+        <select name="project" class="form-select">
+          <option value="">All Projects</option>
+          {% for p in projects %}
+            <option value="{{ p.id }}" {% if project_filter == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="priority" class="form-select">
+          <option value="">All Severities</option>
+          {% for prio_val, prio_label in priorities %}
+            <option value="{{ prio_val }}" {% if priority_filter == prio_val %}selected{% endif %}>{{ prio_label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100 fw-semibold"><i class="bi bi-funnel me-1"></i> Filter</button>
+        {% if search_query or project_filter or priority_filter or status_filter %}
+          <a href="{% url 'tasks:bug_list' %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Bugs Table -->
+  <div class="card card-custom overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Bug Summary</th>
+            <th>Bug ID</th>
+            <th>Related Project</th>
+            <th>Severity</th>
+            <th>Status</th>
+            <th>Reported By</th>
+            <th>Assigned Developer</th>
+            <th>Date</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for bug in bugs %}
+          <tr>
+            <td>
+              <a href="{% url 'tasks:bug_detail' bug.pk %}" class="fw-bold text-dark text-decoration-none hover-primary">
+                {{ bug.title }}
+              </a>
+              <div class="text-muted small" style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ bug.description }}
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border font-monospace">{{ bug.bug_id }}</span>
+            </td>
+            <td>
+              <a href="{% url 'projects:detail' bug.project.pk %}" class="small fw-semibold text-secondary text-decoration-none">
+                {{ bug.project.name }}
+              </a>
+            </td>
+            <td>
+              <span class="badge {{ bug.priority_badge_class }}">{{ bug.get_priority_display }}</span>
+            </td>
+            <td>
+              <span class="badge {{ bug.status_badge_class }}">{{ bug.get_status_display }}</span>
+            </td>
+            <td class="small text-secondary">
+              {{ bug.reported_by.get_full_name|default:bug.reported_by.username|default:"System" }}
+            </td>
+            <td>
+              {% if bug.assigned_developer %}
+                <span class="small fw-semibold text-dark"><i class="bi bi-person me-1"></i>{{ bug.assigned_developer.full_name }}</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary">Unassigned</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">{{ bug.reported_date|date:"M d, Y" }}</td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                <a href="{% url 'tasks:bug_detail' bug.pk %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="View Defect Details">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'tasks:bug_edit' bug.pk %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Triage / Update Bug">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                {% if request.user.is_admin_role or request.user.is_pm_role %}
+                <a href="{% url 'tasks:bug_delete' bug.pk %}" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Delete Defect">
+                  <i class="bi bi-trash"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              <i class="bi bi-bug fs-1 d-block mb-2 text-secondary"></i>
+              No reported bugs found matching your filter criteria.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

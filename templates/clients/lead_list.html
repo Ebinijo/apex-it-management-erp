@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Leads Pipeline{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Sales Leads Pipeline</h3>
+      <p class="text-muted small mb-0">Track prospect inquiries, assign account executives, and convert opportunities into official clients.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'clients:list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-building me-1"></i> Clients Directory
+      </a>
+      <a href="{% url 'clients:lead_create' %}" class="btn btn-primary fw-semibold shadow-sm">
+        <i class="bi bi-funnel me-1"></i> Record New Lead
+      </a>
+    </div>
+  </div>
+
+  <!-- Pipeline Stage Filter Tabs -->
+  <div class="card card-custom p-2 mb-4">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'clients:lead_list' %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-light text-secondary border{% endif %}">
+        All Pipeline Leads <span class="badge bg-secondary ms-1">{{ total_leads }}</span>
+      </a>
+      <a href="{% url 'clients:lead_list' %}?status=NEW" class="btn btn-sm {% if status_filter == 'NEW' %}btn-primary{% else %}btn-light text-secondary border{% endif %}">
+        New Inquiries <span class="badge bg-primary ms-1">{{ new_count }}</span>
+      </a>
+      <a href="{% url 'clients:lead_list' %}?status=CONTACTED" class="btn btn-sm {% if status_filter == 'CONTACTED' %}btn-warning text-dark{% else %}btn-light text-secondary border{% endif %}">
+        Contacted / Discovery <span class="badge bg-warning text-dark ms-1">{{ contacted_count }}</span>
+      </a>
+      <a href="{% url 'clients:lead_list' %}?status=CONVERTED" class="btn btn-sm {% if status_filter == 'CONVERTED' %}btn-success{% else %}btn-light text-secondary border{% endif %}">
+        Converted Clients <span class="badge bg-success ms-1">{{ converted_count }}</span>
+      </a>
+      <a href="{% url 'clients:lead_list' %}?status=LOST" class="btn btn-sm {% if status_filter == 'LOST' %}btn-danger{% else %}btn-light text-secondary border{% endif %}">
+        Lost / Closed <span class="badge bg-danger ms-1">{{ lost_count }}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Search Card -->
+  <div class="card card-custom p-3 mb-4">
+    <form method="GET" class="row g-2 align-items-center">
+      <div class="col-md-9">
+        <div class="input-group">
+          <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search by opportunity title, prospect company, contact person or email...">
+        </div>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100 fw-semibold"><i class="bi bi-funnel me-1"></i> Search Leads</button>
+        {% if search_query %}
+          <a href="{% url 'clients:lead_list' %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Reset Search">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Leads Table -->
+  <div class="card card-custom overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Opportunity Title</th>
+            <th>Lead ID</th>
+            <th>Prospect Organization</th>
+            <th>Contact Person</th>
+            <th>Source</th>
+            <th>Assigned To</th>
+            <th>Pipeline Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lead in leads %}
+          <tr>
+            <td>
+              <a href="{% url 'clients:lead_detail' lead.pk %}" class="fw-bold text-dark text-decoration-none hover-primary">
+                {{ lead.title }}
+              </a>
+              <div class="text-muted small" style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ lead.description|default:"No description provided" }}
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border font-monospace">{{ lead.lead_id }}</span>
+            </td>
+            <td class="fw-semibold text-secondary">{{ lead.organization_name }}</td>
+            <td>
+              <div>{{ lead.contact_person }}</div>
+              <small class="text-muted">{{ lead.email }}</small>
+            </td>
+            <td>
+              <span class="badge bg-light text-secondary border">{{ lead.get_lead_source_display }}</span>
+            </td>
+            <td>
+              {% if lead.assigned_employee %}
+                <span class="small fw-semibold text-dark"><i class="bi bi-person me-1"></i>{{ lead.assigned_employee.full_name }}</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary">Unassigned</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {{ lead.status_badge_class }}">{{ lead.get_status_display }}</span>
+              {% if lead.converted_client %}
+                <div class="mt-1">
+                  <a href="{% url 'clients:detail' lead.converted_client.pk %}" class="badge bg-success text-white text-decoration-none" style="font-size: 0.65rem;">
+                    <i class="bi bi-check2-circle me-1"></i>Client Profile
+                  </a>
+                </div>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                {% if lead.status != 'CONVERTED' %}
+                  <a href="{% url 'clients:lead_convert' lead.pk %}" class="btn btn-outline-success fw-semibold" data-bs-toggle="tooltip" title="Convert to Official Client">
+                    <i class="bi bi-arrow-right-circle-fill me-1"></i> Convert
+                  </a>
+                {% endif %}
+                <a href="{% url 'clients:lead_detail' lead.pk %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="View Lead Details">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'clients:lead_edit' lead.pk %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Edit Lead">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'clients:lead_delete' lead.pk %}" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Delete Lead">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-funnel fs-1 d-block mb-2 text-secondary"></i>
+              No sales opportunities found in this pipeline view.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

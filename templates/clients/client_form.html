@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card card-custom p-4 p-md-5">
+      <!-- Header -->
+      <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
+        <div>
+          <h4 class="fw-bold mb-1 text-dark">{{ page_title }}</h4>
+          <p class="text-muted small mb-0">Record corporate credentials, industry vertical, and primary stakeholders.</p>
+        </div>
+        <a href="{% url 'clients:list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i> Back to Clients
+        </a>
+      </div>
+
+      <form method="POST" novalidate>
+        {% csrf_token %}
+
+        {% if form.errors %}
+          <div class="alert alert-danger py-2 small mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> Please resolve the highlighted field errors.
+          </div>
+        {% endif %}
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Client ID <span class="text-danger">*</span></label>
+            {% if action == 'Onboard New' %}
+              {{ form.client_id }}
+            {% else %}
+              <input type="text" class="form-control" value="{{ client.client_id }}" disabled readonly>
+            {% endif %}
+            {% if form.client_id.errors %}<div class="text-danger small">{{ form.client_id.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Industry Vertical <span class="text-danger">*</span></label>
+            {{ form.industry }}
+            {% if form.industry.errors %}<div class="text-danger small">{{ form.industry.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Company Name <span class="text-danger">*</span></label>
+            {{ form.company_name }}
+            {% if form.company_name.errors %}<div class="text-danger small">{{ form.company_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Primary Contact Person <span class="text-danger">*</span></label>
+            {{ form.contact_person }}
+            {% if form.contact_person.errors %}<div class="text-danger small">{{ form.contact_person.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Corporate Email Address <span class="text-danger">*</span></label>
+            {{ form.email }}
+            {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Telephone Number</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}<div class="text-danger small">{{ form.phone.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Corporate Website URL</label>
+            {{ form.website }}
+            {% if form.website.errors %}<div class="text-danger small">{{ form.website.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Onboarding / Registration Date <span class="text-danger">*</span></label>
+            {{ form.registration_date }}
+            {% if form.registration_date.errors %}<div class="text-danger small">{{ form.registration_date.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold small">Headquarters Physical Address</label>
+          {{ form.address }}
+          {% if form.address.errors %}<div class="text-danger small">{{ form.address.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+          <a href="{% url 'clients:list' %}" class="btn btn-light border">Cancel</a>
+          <button type="submit" class="btn btn-primary fw-semibold px-4">
+            <i class="bi bi-check-circle me-1"></i> {{ action }} Client
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

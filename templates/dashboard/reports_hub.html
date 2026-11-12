@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+
+{% block title %}Enterprise Intelligence & Reports Hub{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Top Banner -->
+  <div class="card card-custom p-4 mb-4 border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #172554 0%, #1E3A8A 100%);">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <span class="badge bg-primary-subtle text-primary mb-2 px-3 py-1">Enterprise Analytics Hub</span>
+        <h3 class="fw-bold mb-1">Company Records & Export Reports</h3>
+        <p class="text-white-50 mb-0 small">Download structured CSV datasets for Payroll, Project Portfolio, Engineering Sprints & Leave Logs</p>
+      </div>
+      <div class="text-md-end">
+        <div class="fw-semibold text-white fs-5">{% now "l, F d, Y" %}</div>
+        <small class="text-white-50">Format: <span class="badge bg-light text-dark fw-bold">Standard UTF-8 CSV</span></small>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 Report Cards Row -->
+  <div class="row g-4 mb-4">
+    <!-- 1. Employee Report Card -->
+    <div class="col-md-6 col-xl-3">
+      <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between shadow-sm">
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="p-3 bg-primary-subtle text-primary rounded-3">
+              <i class="bi bi-person-lines-fill fs-3"></i>
+            </div>
+            <span class="badge bg-light text-dark border font-monospace">{{ total_employees }} Records</span>
+          </div>
+          <h5 class="fw-bold text-dark mb-1">Employee Workforce</h5>
+          <p class="text-muted small mb-3">
+            Comprehensive personnel roster including Employee IDs, designations, departments, contact info, salaries, and account status.
+          </p>
+        </div>
+        <div>
+          {% if request.user.is_admin_role or request.user.is_hr_role %}
+          <a href="{% url 'dashboard:export_employees' %}" class="btn btn-outline-primary w-100 fw-semibold d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-filetype-csv fs-5"></i>
+            <span>Export Employees CSV</span>
+          </a>
+          {% else %}
+          <button class="btn btn-light w-100 text-muted disabled small">Admin & HR Only</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Projects Report Card -->
+    <div class="col-md-6 col-xl-3">
+      <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between shadow-sm">
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="p-3 bg-info-subtle text-info rounded-3">
+              <i class="bi bi-kanban-fill fs-3"></i>
+            </div>
+            <span class="badge bg-light text-dark border font-monospace">{{ total_projects }} Projects</span>
+          </div>
+          <h5 class="fw-bold text-dark mb-1">Project Portfolio</h5>
+          <p class="text-muted small mb-3">
+            Delivery milestones, client accounts, assigned Project Managers, financial budgets, real-time completion %, and overdue flags.
+          </p>
+        </div>
+        <div>
+          <a href="{% url 'dashboard:export_projects' %}" class="btn btn-outline-info text-dark w-100 fw-semibold d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-filetype-csv fs-5"></i>
+            <span>Export Projects CSV</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Tasks Backlog Report Card -->
+    <div class="col-md-6 col-xl-3">
+      <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between shadow-sm">
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="p-3 bg-warning-subtle text-warning rounded-3">
+              <i class="bi bi-check2-square fs-3"></i>
+            </div>
+            <span class="badge bg-light text-dark border font-monospace">{{ total_tasks }} Tasks</span>
+          </div>
+          <h5 class="fw-bold text-dark mb-1">Sprint Tasks Backlog</h5>
+          <p class="text-muted small mb-3">
+            Work units across projects, assigned developers, priority tiers (Low to Critical), execution states, and deadline tracking.
+          </p>
+        </div>
+        <div>
+          <a href="{% url 'dashboard:export_tasks' %}" class="btn btn-outline-warning text-dark w-100 fw-semibold d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-filetype-csv fs-5"></i>
+            <span>Export Tasks CSV</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Leaves Report Card -->
+    <div class="col-md-6 col-xl-3">
+      <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between shadow-sm">
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="p-3 bg-success-subtle text-success rounded-3">
+              <i class="bi bi-calendar2-check-fill fs-3"></i>
+            </div>
+            <span class="badge bg-light text-dark border font-monospace">{{ total_leaves }} Requests</span>
+          </div>
+          <h5 class="fw-bold text-dark mb-1">Leave Applications</h5>
+          <p class="text-muted small mb-3">
+            Workforce attendance records, categories (Paid, Sick, Casual, Unpaid), duration days, approval status, and review timestamps.
+          </p>
+        </div>
+        <div>
+          {% if request.user.is_admin_role or request.user.is_hr_role %}
+          <a href="{% url 'dashboard:export_leaves' %}" class="btn btn-outline-success w-100 fw-semibold d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-filetype-csv fs-5"></i>
+            <span>Export Leaves CSV</span>
+          </a>
+          {% else %}
+          <button class="btn btn-light w-100 text-muted disabled small">Admin & HR Only</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Dataset Previews -->
+  <div class="card card-custom p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+      <h5 class="fw-bold text-dark mb-0">
+        <i class="bi bi-table text-primary me-2"></i>Dataset Sample Previews
+      </h5>
+      <span class="badge bg-light text-secondary border">Showing Top 5 Recent Records</span>
+    </div>
+
+    <!-- Nav Tabs for Previews -->
+    <ul class="nav nav-pills mb-3" id="previewTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-semibold" id="emp-tab" data-bs-toggle="pill" data-bs-target="#emp-pane" type="button" role="tab">
+          <i class="bi bi-people me-1"></i> Employees
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="proj-tab" data-bs-toggle="pill" data-bs-target="#proj-pane" type="button" role="tab">
+          <i class="bi bi-kanban me-1"></i> Projects
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="task-tab" data-bs-toggle="pill" data-bs-target="#task-pane" type="button" role="tab">
+          <i class="bi bi-check2-square me-1"></i> Tasks
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="leave-tab" data-bs-toggle="pill" data-bs-target="#leave-pane" type="button" role="tab">
+          <i class="bi bi-calendar2-check me-1"></i> Leaves
+        </button>
+      </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="previewTabsContent">
+      <!-- Employees Tab -->
+      <div class="tab-pane fade show active" id="emp-pane" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-custom table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Employee Name</th>
+                <th>Department</th>
+                <th>Designation</th>
+                <th>Status</th>
+                <th>Joining Date</th>
+                <th class="text-end">Salary</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in latest_employees %}
+              <tr>
+                <td><span class="badge bg-light text-dark border font-monospace">{{ e.employee_id }}</span></td>
+                <td>
+                  <strong>{{ e.full_name }}</strong>
+                  <div class="text-muted small">{{ e.email }}</div>
+                </td>
+                <td><span class="badge bg-secondary-subtle text-secondary">{{ e.department.name|default:"Unassigned" }}</span></td>
+                <td class="small">{{ e.designation }}</td>
+                <td><span class="badge {{ e.status_badge_class }}">{{ e.get_employment_status_display }}</span></td>
+                <td class="small text-muted">{{ e.joining_date|date:"M d, Y" }}</td>
+                <td class="text-end font-monospace fw-semibold">${{ e.salary|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center py-3 text-muted">No employees registered.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Projects Tab -->
+      <div class="tab-pane fade" id="proj-pane" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-custom table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Project Name</th>
+                <th>Client</th>
+                <th>Manager</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Deadline</th>
+                <th class="text-end">Budget</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in latest_projects %}
+              <tr>
+                <td><span class="badge bg-light text-dark border font-monospace">{{ p.project_id }}</span></td>
+                <td><strong>{{ p.name }}</strong></td>
+                <td class="small text-secondary">{{ p.client.company_name }}</td>
+                <td class="small">{{ p.project_manager.full_name|default:"Unassigned" }}</td>
+                <td><span class="badge {{ p.status_badge_class }}">{{ p.get_status_display }}</span></td>
+                <td style="min-width: 120px;">
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height: 6px;">
+                      <div class="progress-bar bg-primary" role="progressbar" style="width: {{ p.progress_percentage }}%;"></div>
+                    </div>
+                    <span class="small fw-bold">{{ p.progress_percentage }}%</span>
+                  </div>
+                </td>
+                <td class="small {% if p.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}">{{ p.deadline|date:"M d, Y" }}</td>
+                <td class="text-end font-monospace fw-semibold">${{ p.budget|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="8" class="text-center py-3 text-muted">No projects found.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tasks Tab -->
+      <div class="tab-pane fade" id="task-pane" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-custom table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Task ID</th>
+                <th>Title</th>
+                <th>Project</th>
+                <th>Developer</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Deadline</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in latest_tasks %}
+              <tr>
+                <td><span class="badge bg-light text-dark border font-monospace">{{ t.task_id }}</span></td>
+                <td><strong>{{ t.title }}</strong></td>
+                <td class="small text-muted">{{ t.project.name }}</td>
+                <td class="small">{{ t.assigned_developer.full_name|default:"Unassigned" }}</td>
+                <td><span class="badge {{ t.priority_badge_class }}">{{ t.get_priority_display }}</span></td>
+                <td><span class="badge {{ t.status_badge_class }}">{{ t.get_status_display }}</span></td>
+                <td class="small {% if t.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}">{{ t.deadline|date:"M d, Y" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center py-3 text-muted">No tasks recorded.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Leaves Tab -->
+      <div class="tab-pane fade" id="leave-pane" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-custom table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Applicant</th>
+                <th>Leave Type</th>
+                <th>Timeline</th>
+                <th>Duration</th>
+                <th>Status</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in latest_leaves %}
+              <tr>
+                <td>
+                  <strong>{{ l.employee.full_name }}</strong>
+                  <div class="text-muted small">{{ l.employee.employee_id }}</div>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ l.get_leave_type_display }}</span></td>
+                <td class="small text-muted">{{ l.start_date|date:"M d" }} &rarr; {{ l.end_date|date:"M d, Y" }}</td>
+                <td><span class="badge bg-secondary-subtle text-secondary">{{ l.duration_days }} Day{{ l.duration_days|pluralize }}</span></td>
+                <td><span class="badge {{ l.status_badge_class }}">{{ l.get_status_display }}</span></td>
+                <td><span class="small text-secondary text-truncate d-inline-block" style="max-width: 250px;">{{ l.reason }}</span></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center py-3 text-muted">No leave applications recorded.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

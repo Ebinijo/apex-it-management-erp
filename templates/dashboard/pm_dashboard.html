@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+
+{% block title %}Project Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Welcome Banner -->
+  <div class="card card-custom p-4 mb-4 border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #0E7490 0%, #155E75 100%);">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <span class="badge bg-light text-dark mb-2 px-3 py-1">Engineering & Delivery Command</span>
+        <h3 class="fw-bold mb-1">Welcome, {{ request.user.get_full_name|default:request.user.username }}!</h3>
+        <p class="text-white-50 mb-0 small">Client Project Delivery Oversight, Team Sprint Allocations & Deadlines</p>
+      </div>
+      <div class="text-md-end">
+        <div class="fw-semibold text-white fs-5">{% now "l, F d, Y" %}</div>
+        <small class="text-white-50">Role: <span class="badge bg-info text-dark fw-bold">Project Manager</span></small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Managed Projects</span>
+          <h3 class="fw-bold my-1 text-dark">{{ assigned_projects_count }}</h3>
+          <span class="text-info small fw-medium"><i class="bi bi-kanban"></i> Assigned Portfolios</span>
+        </div>
+        <div class="metric-icon-box metric-blue">
+          <i class="bi bi-folder-fill"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">In Progress</span>
+          <h3 class="fw-bold my-1 text-dark">{{ ongoing_projects_count }}</h3>
+          <span class="text-primary small fw-medium"><i class="bi bi-gear-fill"></i> Active Sprints</span>
+        </div>
+        <div class="metric-icon-box metric-amber">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Completed Projects</span>
+          <h3 class="fw-bold my-1 text-dark">{{ completed_projects_count }}</h3>
+          <span class="text-success small fw-medium"><i class="bi bi-check-circle-fill"></i> Delivered</span>
+        </div>
+        <div class="metric-icon-box metric-green">
+          <i class="bi bi-check2-all"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Reported Bugs</span>
+          <h3 class="fw-bold my-1 text-dark">{{ open_bugs_count }}</h3>
+          <span class="text-danger small fw-medium"><i class="bi bi-bug"></i> Quality Assurance</span>
+        </div>
+        <div class="metric-icon-box metric-red">
+          <i class="bi bi-bug-fill"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sprints Velocity Analytics & Reports Strip -->
+  <div class="row g-4 mb-4">
+    <!-- Task Velocity Chart -->
+    <div class="col-lg-7">
+      <div class="card card-custom p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-bar-chart-steps text-info me-2"></i>Sprint Tasks Execution Velocity
+          </h5>
+          <span class="badge bg-light text-secondary border">Portfolio Velocity</span>
+        </div>
+        <div style="height: 220px;">
+          <canvas id="pmTaskVelocityChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- PM Fast Shortcuts & Exports -->
+    <div class="col-lg-5">
+      <div class="card card-custom p-4 h-100">
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Delivery Command Shortcuts</h5>
+        <div class="d-grid gap-2 mb-3">
+          <a href="{% url 'projects:create' %}" class="btn btn-outline-primary text-start py-2">
+            <i class="bi bi-plus-circle me-2"></i> Initiate New Project
+          </a>
+          <a href="{% url 'tasks:create' %}" class="btn btn-outline-info text-dark text-start py-2">
+            <i class="bi bi-check2-square me-2"></i> Allocate Sprint Task
+          </a>
+          <a href="{% url 'dashboard:export_projects' %}" class="btn btn-outline-success text-start py-2">
+            <i class="bi bi-download me-2"></i> Export My Projects Portfolio (CSV)
+          </a>
+          <a href="{% url 'dashboard:reports' %}" class="btn btn-outline-secondary text-start py-2">
+            <i class="bi bi-file-earmark-bar-graph me-2"></i> Enterprise Reports Hub
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Managed Projects Table -->
+  <div class="card card-custom p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+      <h5 class="fw-bold text-dark mb-0">
+        <i class="bi bi-kanban-fill text-info me-2"></i>My Project Portfolios
+      </h5>
+      <a href="{% url 'projects:create' %}" class="btn btn-sm btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> New Project
+      </a>
+    </div>
+
+    {% if managed_projects %}
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Client</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Deadline</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in managed_projects %}
+          <tr>
+            <td>
+              <a href="{% url 'projects:detail' p.pk %}" class="fw-bold text-dark text-decoration-none hover-primary">
+                {{ p.name }}
+              </a>
+              <div class="text-muted small font-monospace">{{ p.project_id }}</div>
+            </td>
+            <td><span class="small fw-semibold text-secondary">{{ p.client.company_name }}</span></td>
+            <td><span class="badge {{ p.status_badge_class }}">{{ p.get_status_display }}</span></td>
+            <td style="min-width: 140px;">
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height: 6px;">
+                  <div class="progress-bar bg-primary" role="progressbar" style="width: {{ p.progress_percentage }}%;"></div>
+                </div>
+                <span class="small fw-bold text-dark">{{ p.progress_percentage }}%</span>
+              </div>
+            </td>
+            <td>
+              <span class="small fw-semibold {% if p.is_overdue %}text-danger{% else %}text-dark{% endif %}">
+                {{ p.deadline|date:"M d, Y" }}
+              </span>
+              {% if p.is_overdue %}
+                <span class="badge bg-danger-subtle text-danger" style="font-size: 0.65rem;">Overdue</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{% url 'projects:detail' p.pk %}" class="btn btn-sm btn-outline-primary">
+                View Project Details &rarr;
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted small mb-0 py-3 text-center">
+      No projects currently assigned to your project manager account.
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- Sprints & Bug Reports Row -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card card-custom p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-check2-square text-primary me-2"></i>Recent Sprint Tasks
+          </h5>
+          <a href="{% url 'tasks:create' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus me-1"></i> New Task
+          </a>
+        </div>
+        {% if recent_tasks %}
+        <div class="table-responsive">
+          <table class="table table-custom table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Assignee</th>
+                <th>Status</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in recent_tasks %}
+              <tr>
+                <td>
+                  <a href="{% url 'tasks:detail' t.pk %}" class="fw-bold text-dark text-decoration-none hover-primary small">
+                    {{ t.title }}
+                  </a>
+                  <div class="text-muted font-monospace" style="font-size: 0.72rem;">{{ t.task_id }} &bull; {{ t.project.name }}</div>
+                </td>
+                <td><span class="small text-muted">{{ t.assigned_developer.user.get_full_name|default:t.assigned_developer.user.username|default:"Unassigned" }}</span></td>
+                <td><span class="badge {{ t.status_badge_class }}" style="font-size: 0.65rem;">{{ t.get_status_display }}</span></td>
+                <td class="text-end">
+                  <a href="{% url 'tasks:detail' t.pk %}" class="btn btn-sm btn-light py-0 px-2" style="font-size: 0.75rem;">
+                    &rarr;
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0 py-3 text-center">No tasks recorded yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card card-custom p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-bug-fill text-danger me-2"></i>Reported Bug Defects
+          </h5>
+          <a href="{% url 'tasks:bug_list' %}" class="btn btn-sm btn-outline-danger">
+            View All Bugs &rarr;
+          </a>
+        </div>
+        {% if recent_bugs %}
+        <div class="table-responsive">
+          <table class="table table-custom table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Defect</th>
+                <th>Severity</th>
+                <th>Status</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in recent_bugs %}
+              <tr>
+                <td>
+                  <a href="{% url 'tasks:bug_detail' b.pk %}" class="fw-bold text-dark text-decoration-none hover-primary small">
+                    {{ b.title }}
+                  </a>
+                  <div class="text-muted font-monospace" style="font-size: 0.72rem;">{{ b.bug_id }} &bull; {{ b.project.name }}</div>
+                </td>
+                <td><span class="badge {{ b.priority_badge_class }}" style="font-size: 0.65rem;">{{ b.get_priority_display }}</span></td>
+                <td><span class="badge {{ b.status_badge_class }}" style="font-size: 0.65rem;">{{ b.get_status_display }}</span></td>
+                <td class="text-end">
+                  <a href="{% url 'tasks:bug_edit' b.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;">
+                    Triage
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0 py-3 text-center">No active bugs reported.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('pmTaskVelocityChart');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['To Do', 'In Progress', 'Completed', 'Blocked'],
+          datasets: [{
+            label: 'Tasks',
+            data: [{{ pm_tasks_todo }}, {{ pm_tasks_inprogress }}, {{ pm_tasks_completed }}, {{ pm_tasks_blocked }}],
+            backgroundColor: ['#6B7280', '#0E7490', '#10B981', '#EF4444'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

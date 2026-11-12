@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Projects Portfolio{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Engineering Projects Portfolio</h3>
+      <p class="text-muted small mb-0">Monitor active client deliveries, developer team allocations, sprint deadlines, and task progress.</p>
+    </div>
+    {% if request.user.is_admin_role or request.user.is_pm_role %}
+    <div>
+      <a href="{% url 'projects:create' %}" class="btn btn-primary fw-semibold shadow-sm">
+        <i class="bi bi-plus-circle-fill me-1"></i> New Project
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Status & Scope Tabs -->
+  <div class="card card-custom p-2 mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'projects:list' %}" class="btn btn-sm {% if not status_filter and not scope_filter %}btn-primary{% else %}btn-light text-secondary border{% endif %}">
+          All Projects <span class="badge bg-secondary ms-1">{{ total_projects }}</span>
+        </a>
+        <a href="{% url 'projects:list' %}?status=IN_PROGRESS" class="btn btn-sm {% if status_filter == 'IN_PROGRESS' %}btn-primary{% else %}btn-light text-secondary border{% endif %}">
+          In Progress <span class="badge bg-primary ms-1">{{ ongoing_count }}</span>
+        </a>
+        <a href="{% url 'projects:list' %}?status=TESTING" class="btn btn-sm {% if status_filter == 'TESTING' %}btn-warning text-dark{% else %}btn-light text-secondary border{% endif %}">
+          Testing & QA <span class="badge bg-warning text-dark ms-1">{{ testing_count }}</span>
+        </a>
+        <a href="{% url 'projects:list' %}?status=COMPLETED" class="btn btn-sm {% if status_filter == 'COMPLETED' %}btn-success{% else %}btn-light text-secondary border{% endif %}">
+          Completed <span class="badge bg-success ms-1">{{ completed_count }}</span>
+        </a>
+      </div>
+
+      <div>
+        <a href="{% url 'projects:list' %}?scope=my_projects" class="btn btn-sm {% if scope_filter == 'my_projects' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+          <i class="bi bi-person-check me-1"></i> My Assigned Projects
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Card -->
+  <div class="card card-custom p-3 mb-4">
+    <form method="GET" class="row g-2 align-items-center">
+      <div class="col-md-9">
+        <div class="input-group">
+          <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search by project name, ID, client company, or project manager...">
+        </div>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100 fw-semibold"><i class="bi bi-funnel me-1"></i> Search Projects</button>
+        {% if search_query or status_filter or scope_filter %}
+          <a href="{% url 'projects:list' %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Projects Table -->
+  <div class="card card-custom overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Project Title</th>
+            <th>Client</th>
+            <th>Project Manager</th>
+            <th>Engineering Team</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Deadline</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in projects %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-size: 0.9rem;">
+                  <i class="bi bi-kanban"></i>
+                </div>
+                <div>
+                  <a href="{% url 'projects:detail' project.pk %}" class="fw-bold text-dark text-decoration-none hover-primary">
+                    {{ project.name }}
+                  </a>
+                  <div class="text-muted small font-monospace">{{ project.project_id }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="fw-semibold text-secondary small">{{ project.client.company_name }}</span>
+            </td>
+            <td>
+              {% if project.project_manager %}
+                <span class="small fw-semibold text-dark"><i class="bi bi-person-fill text-muted me-1"></i>{{ project.project_manager.full_name }}</span>
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex align-items-center">
+                {% for dev in project.team_members.all|slice:":3" %}
+                  <div class="rounded-circle bg-light border text-primary fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px; font-size: 0.72rem; margin-right: -8px;" data-bs-toggle="tooltip" title="{{ dev.full_name }} ({{ dev.designation }})">
+                    {{ dev.user.username|make_list|first|upper }}
+                  </div>
+                {% endfor %}
+                {% if project.team_members.all|length > 3 %}
+                  <div class="rounded-circle bg-secondary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px; font-size: 0.7rem; margin-left: 2px;">
+                    +{{ project.team_members.all|length|add:"-3" }}
+                  </div>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <span class="badge {{ project.status_badge_class }}">{{ project.get_status_display }}</span>
+            </td>
+            <td style="min-width: 140px;">
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height: 6px;">
+                  <div class="progress-bar {% if project.progress_percentage == 100 %}bg-success{% elif project.progress_percentage > 50 %}bg-primary{% else %}bg-info{% endif %}" role="progressbar" style="width: {{ project.progress_percentage }}%;" aria-valuenow="{{ project.progress_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <span class="small fw-bold text-dark">{{ project.progress_percentage }}%</span>
+              </div>
+              <small class="text-muted" style="font-size: 0.7rem;">{{ project.completed_tasks_count }}/{{ project.total_tasks_count }} tasks</small>
+            </td>
+            <td>
+              <div class="small fw-semibold {% if project.is_overdue %}text-danger{% else %}text-dark{% endif %}">
+                {{ project.deadline|date:"M d, Y" }}
+              </div>
+              {% if project.is_overdue %}
+                <span class="badge bg-danger-subtle text-danger" style="font-size: 0.65rem;"><i class="bi bi-clock-history me-1"></i>Overdue</span>
+              {% else %}
+                <span class="text-muted" style="font-size: 0.7rem;">Starts {{ project.start_date|date:"M d" }}</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                <a href="{% url 'projects:detail' project.pk %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="View Full Project Details">
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if request.user.is_admin_role or request.user.is_pm_role %}
+                <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Edit Project">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'projects:delete' project.pk %}" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Delete Project">
+                  <i class="bi bi-trash"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-kanban fs-1 d-block mb-2 text-secondary"></i>
+              No software projects found matching your search criteria.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Task: {{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Top Navigation & Action Buttons -->
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <a href="{% url 'tasks:list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to Tasks
+    </a>
+    {% if request.user.is_admin_role or request.user.is_pm_role %}
+    <div class="d-flex gap-2">
+      <a href="{% url 'tasks:edit' task.pk %}" class="btn btn-primary fw-semibold">
+        <i class="bi bi-pencil-square me-1"></i> Edit Task
+      </a>
+      <a href="{% url 'tasks:delete' task.pk %}" class="btn btn-outline-danger">
+        <i class="bi bi-trash me-1"></i> Delete
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Header Card -->
+  <div class="card card-custom p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #172554 0%, #1E3A8A 100%); color: #FFFFFF;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-4">
+      <div class="d-flex align-items-start gap-3">
+        <div class="p-3 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 65px; height: 65px; font-size: 1.8rem;">
+          <i class="bi bi-check2-square"></i>
+        </div>
+        <div>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="badge bg-light text-dark font-monospace fw-bold">{{ task.task_id }}</span>
+            <span class="badge {{ task.status_badge_class }}">{{ task.get_status_display }}</span>
+            <span class="badge {{ task.priority_badge_class }}">{{ task.get_priority_display }}</span>
+            {% if task.is_overdue %}
+              <span class="badge bg-danger text-white"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue</span>
+            {% endif %}
+          </div>
+          <h2 class="fw-bold mb-1">{{ task.title }}</h2>
+          <p class="text-white-50 mb-0 small">
+            Project: <strong><a href="{% url 'projects:detail' task.project.pk %}" class="text-info text-decoration-none">{{ task.project.name }}</a></strong>
+            &bull; Timeline: {{ task.start_date|date:"M d, Y" }} &rarr; <strong>{{ task.deadline|date:"M d, Y" }}</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Developer Quick Status Transition Panel -->
+  {% if can_edit %}
+  <div class="card card-custom p-3 mb-4 bg-light border">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-arrow-repeat text-primary me-2"></i>Update Task Execution State:</h6>
+        <small class="text-muted">Current status is <strong>{{ task.get_status_display }}</strong></small>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2">
+        {% if task.status != 'TODO' %}
+        <form method="POST" action="{% url 'tasks:status_update' task.pk %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="TODO">
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Mark To Do</button>
+        </form>
+        {% endif %}
+
+        {% if task.status != 'IN_PROGRESS' %}
+        <form method="POST" action="{% url 'tasks:status_update' task.pk %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="IN_PROGRESS">
+          <button type="submit" class="btn btn-sm btn-primary fw-semibold"><i class="bi bi-play-fill me-1"></i> Start Progress</button>
+        </form>
+        {% endif %}
+
+        {% if task.status != 'COMPLETED' %}
+        <form method="POST" action="{% url 'tasks:status_update' task.pk %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="COMPLETED">
+          <button type="submit" class="btn btn-sm btn-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i> Mark Completed</button>
+        </form>
+        {% endif %}
+
+        {% if task.status != 'BLOCKED' %}
+        <form method="POST" action="{% url 'tasks:status_update' task.pk %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="BLOCKED">
+          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-slash-circle me-1"></i> Mark Blocked</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <!-- Left Column: Scope & Acceptance Criteria -->
+    <div class="col-lg-8">
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-card-checklist text-primary me-2"></i>Acceptance Criteria & Implementation Notes
+        </h5>
+        {% if task.description %}
+          <p class="text-secondary small mb-0 lh-lg" style="white-space: pre-line;">{{ task.description }}</p>
+        {% else %}
+          <p class="text-muted small mb-0">No technical description provided for this work item.</p>
+        {% endif %}
+      </div>
+
+      <!-- Quick Link to Project Bugs -->
+      <div class="card card-custom p-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-bug text-danger me-2"></i>Found a Defect in this Task?
+          </h5>
+          <a href="{% url 'tasks:bug_report' %}?project={{ task.project.pk }}" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-plus-circle me-1"></i> Log Bug
+          </a>
+        </div>
+        <p class="text-muted small mb-0">
+          If you encounter abnormal behavior or breaking changes during implementation, file a defect report under <strong>{{ task.project.name }}</strong>.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Column: Project & Assignee Cards -->
+    <div class="col-lg-4">
+      <!-- Assigned Developer Card -->
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-person-badge text-primary me-2"></i>Assigned Developer
+        </h5>
+        {% if task.assigned_developer %}
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;">
+              {{ task.assigned_developer.user.username|make_list|first|upper }}
+            </div>
+            <div>
+              <a href="{% url 'employees:detail' task.assigned_developer.pk %}" class="fw-bold text-dark text-decoration-none">
+                {{ task.assigned_developer.full_name }}
+              </a>
+              <div class="text-muted small">{{ task.assigned_developer.designation }}</div>
+              <small class="text-secondary">{{ task.assigned_developer.email }}</small>
+            </div>
+          </div>
+        {% else %}
+          <span class="badge bg-secondary-subtle text-secondary">Unassigned Task</span>
+        {% endif %}
+      </div>
+
+      <!-- Associated Project Card -->
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-kanban text-info me-2"></i>Associated Project
+        </h5>
+        <div class="small">
+          <div class="fw-bold text-dark fs-6 mb-1">
+            <a href="{% url 'projects:detail' task.project.pk %}" class="text-dark text-decoration-none hover-primary">
+              {{ task.project.name }}
+            </a>
+          </div>
+          <div class="text-muted mb-2 font-monospace">{{ task.project.project_id }} &bull; {{ task.project.client.company_name }}</div>
+          <div class="mb-2">
+            <span class="text-muted">Delivery Progress:</span>
+            <div class="progress mt-1" style="height: 6px;">
+              <div class="progress-bar bg-success" role="progressbar" style="width: {{ task.project.progress_percentage }}%;"></div>
+            </div>
+            <small class="text-muted">{{ task.project.progress_percentage }}% Completed</small>
+          </div>
+          <a href="{% url 'projects:detail' task.project.pk %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+            View Project Details &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Schedule Meta Card -->
+      <div class="card card-custom p-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-calendar3 text-warning me-2"></i>Schedule & Meta
+        </h5>
+        <div class="small">
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">Start Date:</span>
+            <span class="fw-semibold">{{ task.start_date|date:"M d, Y" }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">Deadline:</span>
+            <span class="fw-bold {% if task.is_overdue %}text-danger{% else %}text-dark{% endif %}">{{ task.deadline|date:"M d, Y" }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">Priority:</span>
+            <span class="badge {{ task.priority_badge_class }}">{{ task.get_priority_display }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span class="text-muted">Created By:</span>
+            <span>{{ task.created_by.get_full_name|default:task.created_by.username|default:"System" }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

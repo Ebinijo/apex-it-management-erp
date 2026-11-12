@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}HR Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Welcome Banner -->
+  <div class="card card-custom p-4 mb-4 border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #78350F 0%, #B45309 100%);">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <span class="badge bg-warning text-dark mb-2 px-3 py-1">Human Resources Command Center</span>
+        <h3 class="fw-bold mb-1">Hello, {{ request.user.get_full_name|default:request.user.username }}!</h3>
+        <p class="text-white-50 mb-0 small">Workforce Headcount, Department Alignment & Leave Administration</p>
+      </div>
+      <div class="text-md-end">
+        <div class="fw-semibold text-white fs-5">{% now "l, F d, Y" %}</div>
+        <small class="text-white-50">Department: <span class="badge bg-light text-dark fw-bold">People Operations</span></small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Total Headcount</span>
+          <h3 class="fw-bold my-1 text-dark">{{ total_employees }}</h3>
+          <span class="text-success small fw-medium"><i class="bi bi-people-fill"></i> {{ active_employees }} Active</span>
+        </div>
+        <div class="metric-icon-box metric-blue">
+          <i class="bi bi-person-lines-fill"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Pending Leaves</span>
+          <h3 class="fw-bold my-1 text-dark">{{ pending_leaves }}</h3>
+          <span class="text-warning small fw-medium"><i class="bi bi-hourglass-split"></i> Awaiting Decision</span>
+        </div>
+        <div class="metric-icon-box metric-amber">
+          <i class="bi bi-calendar-event"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Approved Leaves</span>
+          <h3 class="fw-bold my-1 text-dark">{{ approved_leaves }}</h3>
+          <span class="text-success small fw-medium"><i class="bi bi-check-all"></i> Processed</span>
+        </div>
+        <div class="metric-icon-box metric-green">
+          <i class="bi bi-calendar2-check"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Rejected Leaves</span>
+          <h3 class="fw-bold my-1 text-dark">{{ rejected_leaves }}</h3>
+          <span class="text-danger small fw-medium"><i class="bi bi-x-circle"></i> Denied</span>
+        </div>
+        <div class="metric-icon-box metric-red">
+          <i class="bi bi-calendar2-x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart & Pending Applications Row -->
+  <div class="row g-4 mb-4">
+    <!-- Department Distribution Chart -->
+    <div class="col-lg-7">
+      <div class="card card-custom p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-bar-chart-fill text-warning me-2"></i>Headcount by Department
+          </h5>
+          <a href="{% url 'employees:department_list' %}" class="small text-decoration-none">Manage &rarr;</a>
+        </div>
+        <div style="height: 250px;">
+          <canvas id="deptChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-lg-5">
+      <div class="card card-custom p-4 h-100">
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>HR Fast Actions</h5>
+        <div class="d-grid gap-2 mb-3">
+          <a href="{% url 'employees:create' %}" class="btn btn-outline-primary text-start py-2">
+            <i class="bi bi-person-plus-fill me-2"></i> Register New Employee
+          </a>
+          <a href="{% url 'employees:department_create' %}" class="btn btn-outline-secondary text-start py-2">
+            <i class="bi bi-plus-circle me-2"></i> Create New Department
+          </a>
+          <a href="{% url 'dashboard:export_employees' %}" class="btn btn-outline-success text-start py-2">
+            <i class="bi bi-filetype-csv me-2"></i> Export Staff Roster (CSV)
+          </a>
+          <a href="{% url 'dashboard:export_leaves' %}" class="btn btn-outline-info text-dark text-start py-2">
+            <i class="bi bi-download me-2"></i> Export Leave Records (CSV)
+          </a>
+          <a href="{% url 'employees:leave_list' %}?status=PENDING" class="btn btn-outline-warning text-dark text-start py-2">
+            <i class="bi bi-clock-history me-2"></i> Review Pending Leaves ({{ pending_leaves }})
+          </a>
+        </div>
+
+        <div class="border rounded p-3 bg-light small">
+          <strong><i class="bi bi-shield-check text-success me-1"></i> HR Compliance Rule:</strong>
+          <p class="text-muted mb-0 mt-1">HR Managers can approve or reject company employee leave requests, but cannot self-approve their own applications.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Leave Approval Queue -->
+  <div class="card card-custom p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+      <h5 class="fw-bold text-dark mb-0">
+        <i class="bi bi-hourglass-top text-warning me-2"></i>Pending Leave Queue
+      </h5>
+      <a href="{% url 'employees:leave_list' %}" class="small text-decoration-none">View All &rarr;</a>
+    </div>
+
+    {% if pending_leaves_queue %}
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Type</th>
+            <th>Dates</th>
+            <th>Days</th>
+            <th>Reason</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in pending_leaves_queue %}
+          <tr>
+            <td>
+              <strong>{{ req.employee.full_name }}</strong>
+              <div class="text-muted small">{{ req.employee.employee_id }} &bull; {{ req.employee.designation }}</div>
+            </td>
+            <td><span class="badge bg-light text-dark border">{{ req.get_leave_type_display }}</span></td>
+            <td class="small">{{ req.start_date|date:"M d, Y" }} &rarr; {{ req.end_date|date:"M d, Y" }}</td>
+            <td><span class="badge bg-warning-subtle text-warning-emphasis">{{ req.duration_days }} Day{{ req.duration_days|pluralize }}</span></td>
+            <td><span class="text-secondary small text-truncate d-inline-block" style="max-width: 250px;">{{ req.reason }}</span></td>
+            <td class="text-end">
+              {% if req.employee.user == request.user %}
+                <span class="badge bg-light text-muted border">Own Request</span>
+              {% else %}
+                <a href="{% url 'employees:leave_review' req.pk %}" class="btn btn-sm btn-primary">
+                  Review & Decision
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted small mb-0 py-3 text-center">
+      <i class="bi bi-check2-circle fs-3 text-success d-block mb-1"></i>
+      All caught up! No pending leave applications requiring approval.
+    </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('deptChart');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: {{ dept_names|safe }},
+          datasets: [{
+            label: 'Headcount',
+            data: {{ dept_counts|safe }},
+            backgroundColor: '#D97706',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

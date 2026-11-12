@@ -1,0 +1,123 @@
+<aside class="sidebar" id="sidebar">
+  <!-- Brand Logo & Name -->
+  <a href="{% url 'dashboard:index' %}" class="sidebar-brand">
+    <i class="bi bi-cpu-fill"></i>
+    <div class="d-flex flex-column">
+      <span class="lh-1">APEX IT</span>
+      <small class="text-info fw-normal" style="font-size: 0.65rem; letter-spacing: 0.05em;">SYSTEM ERP</small>
+    </div>
+  </a>
+
+  <!-- Navigation Menu -->
+  <ul class="sidebar-menu">
+    <li class="sidebar-heading">Core</li>
+    <li class="sidebar-item">
+      <a href="{% url 'dashboard:index' %}" class="sidebar-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-grid-1x2-fill"></i>
+        <span>Dashboard</span>
+      </a>
+    </li>
+
+    <!-- Module 1: Employee & Leave Management -->
+    <li class="sidebar-heading">Workforce</li>
+    <li class="sidebar-item">
+      <a href="{% url 'employees:list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'employees' and 'leave' not in request.path and 'department' not in request.path %}active{% endif %}">
+        <i class="bi bi-people-fill"></i>
+        <span>Employees</span>
+      </a>
+    </li>
+    <li class="sidebar-item">
+      <a href="{% url 'employees:department_list' %}" class="sidebar-link {% if 'department' in request.path %}active{% endif %}">
+        <i class="bi bi-diagram-3-fill"></i>
+        <span>Departments</span>
+      </a>
+    </li>
+    <li class="sidebar-item">
+      <a href="{% url 'employees:leave_list' %}" class="sidebar-link {% if 'leave' in request.path %}active{% endif %}">
+        <i class="bi bi-calendar2-check-fill"></i>
+        <span>Leave Requests</span>
+      </a>
+    </li>
+
+    <!-- Module 2: Client & Lead Management -->
+    {% if request.user.is_admin_role or request.user.is_hr_role or request.user.is_pm_role %}
+    <li class="sidebar-heading">Business</li>
+    <li class="sidebar-item">
+      <a href="{% url 'clients:list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'clients' and 'leads' not in request.path %}active{% endif %}">
+        <i class="bi bi-building-fill"></i>
+        <span>Clients</span>
+      </a>
+    </li>
+    <li class="sidebar-item">
+      <a href="{% url 'clients:lead_list' %}" class="sidebar-link {% if 'leads' in request.path %}active{% endif %}">
+        <i class="bi bi-funnel-fill"></i>
+        <span>Leads Pipeline</span>
+      </a>
+    </li>
+    {% endif %}
+
+    <!-- Module 3 & 4: Projects, Tasks & Bugs -->
+    <li class="sidebar-heading">Engineering</li>
+    <li class="sidebar-item">
+      <a href="{% url 'projects:list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'projects' %}active{% endif %}">
+        <i class="bi bi-kanban-fill"></i>
+        <span>Projects</span>
+      </a>
+    </li>
+    <li class="sidebar-item">
+      <a href="{% url 'tasks:list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'tasks' and 'bugs' not in request.path %}active{% endif %}">
+        <i class="bi bi-check2-square"></i>
+        <span>Tasks</span>
+      </a>
+    </li>
+    <li class="sidebar-item">
+      <a href="{% url 'tasks:bug_list' %}" class="sidebar-link {% if 'bugs' in request.path %}active{% endif %}">
+        <i class="bi bi-bug-fill"></i>
+        <span>Bug Tracker</span>
+      </a>
+    </li>
+
+    <!-- Module 5: Intelligence & Analytics Reports -->
+    {% if request.user.is_admin_role or request.user.is_hr_role or request.user.is_pm_role %}
+    <li class="sidebar-heading">Intelligence</li>
+    <li class="sidebar-item">
+      <a href="{% url 'dashboard:reports' %}" class="sidebar-link {% if 'reports' in request.path %}active{% endif %}">
+        <i class="bi bi-file-earmark-bar-graph-fill"></i>
+        <span>Reports Hub</span>
+      </a>
+    </li>
+    {% endif %}
+
+    <!-- Administration (Admin Only) -->
+    {% if request.user.is_admin_role %}
+    <li class="sidebar-heading">Administration</li>
+    <li class="sidebar-item">
+      <a href="{% url 'accounts:user_list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'accounts' and 'user' in request.path %}active{% endif %}">
+        <i class="bi bi-shield-lock-fill"></i>
+        <span>User Accounts</span>
+      </a>
+    </li>
+    <li class="sidebar-item">
+      <a href="/admin/" target="_blank" class="sidebar-link">
+        <i class="bi bi-gear-wide-connected"></i>
+        <span>Django Admin</span>
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+
+  <!-- Bottom User Card -->
+  <div class="sidebar-user">
+    <div class="d-flex align-items-center gap-2">
+      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px;">
+        {{ request.user.username|make_list|first|upper }}
+      </div>
+      <div class="overflow-hidden">
+        <div class="text-truncate fw-bold text-white small">{{ request.user.get_full_name|default:request.user.username }}</div>
+        <div class="text-truncate text-muted" style="font-size: 0.72rem;">{{ request.user.get_role_display }}</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<!-- Backdrop for mobile responsive toggle -->
+<div class="modal-backdrop fade show d-none" id="sidebarBackdrop" style="z-index: 1035;"></div>

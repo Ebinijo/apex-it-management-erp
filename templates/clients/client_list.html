@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Corporate Clients Directory{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Corporate Clients Directory</h3>
+      <p class="text-muted small mb-0">Manage institutional client relationships, contact points, and industry partnerships.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'clients:lead_list' %}" class="btn btn-outline-info text-dark">
+        <i class="bi bi-funnel-fill me-1"></i> Leads Pipeline
+      </a>
+      <a href="{% url 'clients:create' %}" class="btn btn-primary fw-semibold shadow-sm">
+        <i class="bi bi-building-add me-1"></i> Add New Client
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Card -->
+  <div class="card card-custom p-3 mb-4">
+    <form method="GET" class="row g-2 align-items-center">
+      <div class="col-md-6">
+        <div class="input-group">
+          <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search by company name, contact person, ID or email...">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <select name="industry" class="form-select">
+          <option value="">All Industry Verticals</option>
+          {% for ind_val, ind_label in industries %}
+            <option value="{{ ind_val }}" {% if industry_filter == ind_val %}selected{% endif %}>{{ ind_label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100 fw-semibold"><i class="bi bi-funnel me-1"></i> Filter</button>
+        {% if search_query or industry_filter %}
+          <a href="{% url 'clients:list' %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Clients Table -->
+  <div class="card card-custom overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Company Name</th>
+            <th>Client ID</th>
+            <th>Industry</th>
+            <th>Primary Contact</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Registered</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for client in clients %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-size: 0.9rem;">
+                  <i class="bi bi-building"></i>
+                </div>
+                <div>
+                  <a href="{% url 'clients:detail' client.pk %}" class="fw-bold text-dark text-decoration-none hover-primary">
+                    {{ client.company_name }}
+                  </a>
+                  {% if client.website %}
+                    <div><a href="{{ client.website }}" target="_blank" class="text-muted small text-decoration-none"><i class="bi bi-link-45deg"></i> Website</a></div>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border font-monospace">{{ client.client_id }}</span>
+            </td>
+            <td>
+              <span class="badge bg-secondary-subtle text-secondary">{{ client.get_industry_display }}</span>
+            </td>
+            <td class="fw-semibold text-dark">{{ client.contact_person }}</td>
+            <td class="small text-secondary">{{ client.email }}</td>
+            <td class="small text-secondary">{{ client.phone|default:"—" }}</td>
+            <td class="small text-muted">{{ client.registration_date|date:"M d, Y" }}</td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                <a href="{% url 'clients:detail' client.pk %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="View Client Overview">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'clients:edit' client.pk %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Edit Client">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'clients:delete' client.pk %}" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Delete Client">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-building-slash fs-1 d-block mb-2 text-secondary"></i>
+              No corporate client records found matching your filters.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

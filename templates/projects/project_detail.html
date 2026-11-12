@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+
+{% block title %}Project: {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Top Navigation & Action Buttons -->
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <a href="{% url 'projects:list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to Projects
+    </a>
+    {% if request.user.is_admin_role or request.user.is_pm_role %}
+    <div class="d-flex gap-2">
+      <a href="{% url 'projects:edit' project.pk %}" class="btn btn-primary fw-semibold">
+        <i class="bi bi-pencil-square me-1"></i> Edit Project
+      </a>
+      <a href="{% url 'projects:delete' project.pk %}" class="btn btn-outline-danger">
+        <i class="bi bi-trash me-1"></i> Delete
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Project Header Banner -->
+  <div class="card card-custom p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #172554 0%, #1E3A8A 100%); color: #FFFFFF;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-4">
+      <div class="d-flex align-items-start gap-3">
+        <div class="p-3 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 70px; height: 70px; font-size: 2rem;">
+          <i class="bi bi-kanban"></i>
+        </div>
+        <div>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="badge bg-light text-dark font-monospace fw-bold">{{ project.project_id }}</span>
+            <span class="badge {{ project.status_badge_class }}">{{ project.get_status_display }}</span>
+            {% if project.is_overdue %}
+              <span class="badge bg-danger text-white"><i class="bi bi-exclamation-triangle-fill me-1"></i>Past Deadline</span>
+            {% endif %}
+          </div>
+          <h2 class="fw-bold mb-1">{{ project.name }}</h2>
+          <p class="text-white-50 mb-0">
+            Client: <strong><a href="{% url 'clients:detail' project.client.pk %}" class="text-info text-decoration-none">{{ project.client.company_name }}</a></strong>
+            &bull; Timeline: {{ project.start_date|date:"M d, Y" }} &rarr; <strong>{{ project.deadline|date:"M d, Y" }}</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- Live Progress Percentage Badge / Box -->
+      <div class="card bg-white bg-opacity-10 border-0 p-3 rounded-3 text-white text-md-end" style="min-width: 180px;">
+        <span class="text-white-50 small text-uppercase fw-semibold">Delivery Progress</span>
+        <h2 class="fw-bold my-1 text-white">{{ project.progress_percentage }}%</h2>
+        <div class="progress" style="height: 6px; background: rgba(255,255,255,0.2);">
+          <div class="progress-bar bg-success" role="progressbar" style="width: {{ project.progress_percentage }}%;" aria-valuenow="{{ project.progress_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Task & Bug Counters Row (Strictly Calculated from Database) -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Total Sprints Tasks</span>
+          <h3 class="fw-bold my-1 text-dark">{{ project.total_tasks_count }}</h3>
+          <span class="text-secondary small fw-medium"><i class="bi bi-list-task"></i> Work Units</span>
+        </div>
+        <div class="metric-icon-box metric-blue">
+          <i class="bi bi-check2-square"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Completed Tasks</span>
+          <h3 class="fw-bold my-1 text-dark">{{ project.completed_tasks_count }}</h3>
+          <span class="text-success small fw-medium"><i class="bi bi-check-circle-fill"></i> Completed</span>
+        </div>
+        <div class="metric-icon-box metric-green">
+          <i class="bi bi-check-all"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Pending Tasks</span>
+          <h3 class="fw-bold my-1 text-dark">{{ project.pending_tasks_count }}</h3>
+          <span class="text-warning small fw-medium"><i class="bi bi-clock-history"></i> In Progress / To Do</span>
+        </div>
+        <div class="metric-icon-box metric-amber">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card-metric shadow-sm">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase">Reported Bugs</span>
+          <h3 class="fw-bold my-1 text-dark">{{ project.open_bugs_count }}</h3>
+          <span class="text-danger small fw-medium"><i class="bi bi-bug-fill"></i> Active Issues</span>
+        </div>
+        <div class="metric-icon-box metric-red">
+          <i class="bi bi-bug"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Left Column: Overview & Scope -->
+    <div class="col-lg-8">
+      <!-- Project Scope Card -->
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-file-earmark-text text-primary me-2"></i>Project Overview & Requirements
+        </h5>
+        {% if project.description %}
+          <p class="text-secondary small mb-0 lh-lg" style="white-space: pre-line;">{{ project.description }}</p>
+        {% else %}
+          <p class="text-muted small mb-0">No project scope documentation provided.</p>
+        {% endif %}
+      </div>
+
+      <!-- Engineering Team Members Allocation -->
+      <div class="card card-custom p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-people-fill text-info me-2"></i>Engineering Team Members
+          </h5>
+          <span class="badge bg-light text-secondary border">{{ project.team_members.all|length }} Assigned Developers</span>
+        </div>
+
+        <div class="row g-3">
+          {% for member in project.team_members.all %}
+          <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+              {% if member.user.profile_picture %}
+                <img src="{{ member.user.profile_picture.url }}" alt="{{ member.full_name }}" class="rounded-circle object-fit-cover shadow-sm" width="44" height="44">
+              {% else %}
+                <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;">
+                  {{ member.user.username|make_list|first|upper }}
+                </div>
+              {% endif %}
+              <div class="overflow-hidden">
+                <a href="{% url 'employees:detail' member.pk %}" class="fw-bold text-dark text-decoration-none d-block text-truncate">
+                  {{ member.full_name }}
+                </a>
+                <div class="text-muted small text-truncate">{{ member.designation }}</div>
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                  {% for s in member.skills_list|slice:":2" %}
+                    <span class="badge bg-primary-subtle text-primary" style="font-size: 0.65rem;">{{ s }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-12 text-center py-3 text-muted small">
+            No developers currently allocated to this engineering team.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Tasks and Bugs Workspace (Ready for Phase 5) -->
+      <!-- Tasks Card -->
+      <div class="card card-custom p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-list-check text-primary me-2"></i>Project Sprints & Tasks
+          </h5>
+          {% if request.user.is_admin_role or request.user.is_pm_role %}
+          <a href="{% url 'tasks:create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Add Task
+          </a>
+          {% endif %}
+        </div>
+        {% if tasks %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle small mb-0">
+              <thead>
+                <tr>
+                  <th>Task ID</th>
+                  <th>Title</th>
+                  <th>Assignee</th>
+                  <th>Priority</th>
+                  <th>Deadline</th>
+                  <th>Status</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for task in tasks %}
+                <tr>
+                  <td><span class="badge bg-light text-dark border font-monospace">{{ task.task_id }}</span></td>
+                  <td>
+                    <a href="{% url 'tasks:detail' task.pk %}" class="fw-bold text-dark text-decoration-none hover-primary">
+                      {{ task.title }}
+                    </a>
+                  </td>
+                  <td>{{ task.assigned_developer.full_name|default:"Unassigned" }}</td>
+                  <td><span class="badge {{ task.priority_badge_class }}">{{ task.get_priority_display }}</span></td>
+                  <td>
+                    <span class="{% if task.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                      {{ task.deadline|date:"M d" }}
+                    </span>
+                  </td>
+                  <td><span class="badge {{ task.status_badge_class }}">{{ task.get_status_display }}</span></td>
+                  <td class="text-end">
+                    <a href="{% url 'tasks:detail' task.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;">
+                      &rarr;
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0 py-3 text-center">
+            No sprint tasks allocated yet.
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Bugs Card -->
+      <div class="card card-custom p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-bug-fill text-danger me-2"></i>Reported Defect Issues
+          </h5>
+          <a href="{% url 'tasks:bug_report' %}?project={{ project.pk }}" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-bug me-1"></i> Report Bug
+          </a>
+        </div>
+        {% if bugs %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle small mb-0">
+              <thead>
+                <tr>
+                  <th>Bug ID</th>
+                  <th>Issue Summary</th>
+                  <th>Severity</th>
+                  <th>Status</th>
+                  <th>Assigned To</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for bug in bugs %}
+                <tr>
+                  <td><span class="badge bg-danger-subtle text-danger font-monospace">{{ bug.bug_id }}</span></td>
+                  <td>
+                    <a href="{% url 'tasks:bug_detail' bug.pk %}" class="fw-bold text-dark text-decoration-none hover-primary">
+                      {{ bug.title }}
+                    </a>
+                  </td>
+                  <td><span class="badge {{ bug.priority_badge_class }}">{{ bug.get_priority_display }}</span></td>
+                  <td><span class="badge {{ bug.status_badge_class }}">{{ bug.get_status_display }}</span></td>
+                  <td>{{ bug.assigned_developer.full_name|default:"Unassigned" }}</td>
+                  <td class="text-end">
+                    <a href="{% url 'tasks:bug_detail' bug.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;">
+                      &rarr;
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0 py-3 text-center">
+            No bug defects reported against this project.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right Column: Client & Project Manager Info -->
+    <div class="col-lg-4">
+      <!-- Client Information Card -->
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-building text-primary me-2"></i>Client Details
+        </h5>
+        <div class="small">
+          <div class="mb-2">
+            <span class="text-muted d-block">Corporate Entity</span>
+            <a href="{% url 'clients:detail' project.client.pk %}" class="fw-bold text-dark text-decoration-none fs-6">
+              {{ project.client.company_name }}
+            </a>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted d-block">Industry</span>
+            <span class="badge bg-secondary-subtle text-secondary">{{ project.client.get_industry_display }}</span>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted d-block">Primary Contact</span>
+            <span class="fw-semibold text-dark">{{ project.client.contact_person }}</span>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted d-block">Email</span>
+            <span class="fw-semibold text-dark">{{ project.client.email }}</span>
+          </div>
+          <div class="mb-3">
+            <span class="text-muted d-block">Phone</span>
+            <span class="fw-semibold text-dark">{{ project.client.phone|default:"N/A" }}</span>
+          </div>
+          <a href="{% url 'clients:detail' project.client.pk %}" class="btn btn-sm btn-outline-primary w-100">
+            View Full Client Profile &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Project Manager Card -->
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-person-workspace text-warning me-2"></i>Assigned Project Manager
+        </h5>
+        {% if project.project_manager %}
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+              {{ project.project_manager.user.username|make_list|first|upper }}
+            </div>
+            <div>
+              <div class="fw-bold text-dark">{{ project.project_manager.full_name }}</div>
+              <div class="text-muted small">{{ project.project_manager.designation }}</div>
+              <small class="text-secondary">{{ project.project_manager.email }}</small>
+            </div>
+          </div>
+          <div class="p-2 bg-light rounded small text-muted">
+            <i class="bi bi-shield-check text-success me-1"></i> Responsible for sprint velocity, task delegations, and delivery milestones.
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">No Project Manager currently assigned.</p>
+        {% endif %}
+      </div>
+
+      <!-- Schedule & Timeline Card -->
+      <div class="card card-custom p-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-calendar2-range text-info me-2"></i>Project Milestones
+        </h5>
+        <div class="small">
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span class="text-muted">Start Date:</span>
+            <span class="fw-semibold">{{ project.start_date|date:"F d, Y" }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span class="text-muted">Deadline:</span>
+            <span class="fw-bold {% if project.is_overdue %}text-danger{% else %}text-dark{% endif %}">
+              {{ project.deadline|date:"F d, Y" }}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span class="text-muted">Current Status:</span>
+            <span class="badge {{ project.status_badge_class }}">{{ project.get_status_display }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-2">
+            <span class="text-muted">Progress:</span>
+            <span class="fw-bold text-success">{{ project.progress_percentage }}% Completed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

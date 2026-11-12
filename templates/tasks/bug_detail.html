@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Bug: {{ bug.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Top Navigation & Action Buttons -->
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <a href="{% url 'tasks:bug_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to Bug Tracker
+    </a>
+    <div class="d-flex gap-2">
+      <a href="{% url 'tasks:bug_edit' bug.pk %}" class="btn btn-primary fw-semibold">
+        <i class="bi bi-pencil-square me-1"></i> Triage / Update Defect
+      </a>
+      {% if request.user.is_admin_role or request.user.is_pm_role %}
+      <a href="{% url 'tasks:bug_delete' bug.pk %}" class="btn btn-outline-danger">
+        <i class="bi bi-trash me-1"></i> Delete
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Header Card -->
+  <div class="card card-custom p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 100%); color: #FFFFFF;">
+    <div class="d-flex align-items-start gap-3">
+      <div class="p-3 bg-white text-danger rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 65px; height: 65px; font-size: 1.8rem;">
+        <i class="bi bi-bug-fill"></i>
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <span class="badge bg-light text-dark font-monospace fw-bold">{{ bug.bug_id }}</span>
+          <span class="badge {{ bug.status_badge_class }}">{{ bug.get_status_display }}</span>
+          <span class="badge {{ bug.priority_badge_class }}">{{ bug.get_priority_display }}</span>
+        </div>
+        <h2 class="fw-bold mb-1">{{ bug.title }}</h2>
+        <p class="text-white-50 mb-0 small">
+          Project: <strong><a href="{% url 'projects:detail' bug.project.pk %}" class="text-info text-decoration-none">{{ bug.project.name }}</a></strong>
+          &bull; Reported on {{ bug.reported_date|date:"F d, Y" }} by {{ bug.reported_by.get_full_name|default:bug.reported_by.username|default:"System" }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Reproduction Details & Resolution -->
+    <div class="col-lg-8">
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-file-earmark-code text-danger me-2"></i>Steps to Reproduce & Expected Behavior
+        </h5>
+        <div class="p-3 bg-light rounded-3 border text-secondary small lh-lg" style="white-space: pre-line; font-family: 'Consolas', 'Courier New', monospace;">
+          {{ bug.description }}
+        </div>
+      </div>
+
+      <div class="card card-custom p-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-tools text-success me-2"></i>Resolution & Diagnostic Notes
+        </h5>
+        {% if bug.resolution_notes %}
+          <div class="p-3 bg-success-subtle border border-success-subtle rounded-3 small text-success-emphasis" style="white-space: pre-line;">
+            {{ bug.resolution_notes }}
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">No resolution notes logged yet.
+            <a href="{% url 'tasks:bug_edit' bug.pk %}">Add diagnostic notes</a>.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right Column: Ownership & Meta Cards -->
+    <div class="col-lg-4">
+      <!-- Assigned Developer Card -->
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-person-badge text-primary me-2"></i>Assigned Developer
+        </h5>
+        {% if bug.assigned_developer %}
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;">
+              {{ bug.assigned_developer.user.username|make_list|first|upper }}
+            </div>
+            <div>
+              <a href="{% url 'employees:detail' bug.assigned_developer.pk %}" class="fw-bold text-dark text-decoration-none">
+                {{ bug.assigned_developer.full_name }}
+              </a>
+              <div class="text-muted small">{{ bug.assigned_developer.designation }}</div>
+              <small class="text-secondary">{{ bug.assigned_developer.email }}</small>
+            </div>
+          </div>
+        {% else %}
+          <div class="alert alert-light border small text-muted mb-0">
+            <i class="bi bi-exclamation-circle me-1"></i> No developer assigned to resolve this bug.
+            <a href="{% url 'tasks:bug_edit' bug.pk %}" class="fw-bold">Assign now</a>.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Associated Project Card -->
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-kanban text-info me-2"></i>Affected Project
+        </h5>
+        <div class="small">
+          <div class="fw-bold text-dark fs-6 mb-1">
+            <a href="{% url 'projects:detail' bug.project.pk %}" class="text-dark text-decoration-none hover-primary">
+              {{ bug.project.name }}
+            </a>
+          </div>
+          <div class="text-muted mb-2 font-monospace">{{ bug.project.project_id }} &bull; {{ bug.project.client.company_name }}</div>
+          <a href="{% url 'projects:detail' bug.project.pk %}" class="btn btn-sm btn-outline-primary w-100">
+            View Project Delivery Page &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Reporter Meta Card -->
+      <div class="card card-custom p-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-info-circle text-secondary me-2"></i>Defect Metadata
+        </h5>
+        <div class="small">
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">Reported By:</span>
+            <span class="fw-semibold">{{ bug.reported_by.get_full_name|default:bug.reported_by.username|default:"System" }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">Reported Date:</span>
+            <span>{{ bug.reported_date|date:"F d, Y" }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">Severity:</span>
+            <span class="badge {{ bug.priority_badge_class }}">{{ bug.get_priority_display }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span class="text-muted">Current Status:</span>
+            <span class="badge {{ bug.status_badge_class }}">{{ bug.get_status_display }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

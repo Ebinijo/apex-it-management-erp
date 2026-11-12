@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Convert Lead: {{ lead.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card card-custom p-4 p-md-5">
+      <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
+        <div>
+          <h4 class="fw-bold mb-1 text-success"><i class="bi bi-arrow-right-circle-fill me-2"></i>Convert Lead to Client</h4>
+          <p class="text-muted small mb-0">Transition opportunity <strong>{{ lead.lead_id }}</strong> into an active corporate client contract.</p>
+        </div>
+        <a href="{% url 'clients:lead_detail' lead.pk %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+      </div>
+
+      <!-- Lead Summary Header -->
+      <div class="card bg-light border p-3 mb-4 rounded-3">
+        <div class="row g-2 small">
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Prospect Organization:</span>
+            <span class="fw-bold text-dark fs-6">{{ lead.organization_name }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Opportunity Scope:</span>
+            <span class="fw-semibold text-dark">{{ lead.title }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Primary Contact:</span>
+            <span class="fw-semibold text-dark">{{ lead.contact_person }} ({{ lead.email }})</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Phone:</span>
+            <span class="fw-semibold text-dark">{{ lead.phone|default:"N/A" }}</span>
+          </div>
+        </div>
+      </div>
+
+      <form method="POST" novalidate id="convertForm">
+        {% csrf_token %}
+
+        {% if form.errors %}
+          <div class="alert alert-danger py-2 small mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> Please resolve the errors below.
+          </div>
+        {% endif %}
+
+        <h5 class="fw-bold text-dark mb-3">Choose Conversion Pathway:</h5>
+
+        <!-- Option 1: Create New Client -->
+        <div class="card border p-3 mb-3" id="cardNewClient">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="conversion_type" id="typeNew" value="NEW_CLIENT" checked onchange="toggleOption()">
+            <label class="form-check-label fw-bold text-dark" for="typeNew">
+              Create a Brand New Corporate Client
+            </label>
+            <p class="text-muted small mb-3">A new client record will be registered using the prospect's company and contact details.</p>
+          </div>
+
+          <div id="newClientFields" class="ps-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">New Client ID <span class="text-danger">*</span></label>
+                {{ form.client_id }}
+                {% if form.client_id.errors %}<div class="text-danger small">{{ form.client_id.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Industry Vertical <span class="text-danger">*</span></label>
+                {{ form.industry }}
+                {% if form.industry.errors %}<div class="text-danger small">{{ form.industry.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold small">Headquarters Physical Address</label>
+                {{ form.address }}
+                {% if form.address.errors %}<div class="text-danger small">{{ form.address.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Option 2: Associate Existing Client -->
+        <div class="card border p-3 mb-4" id="cardExistingClient">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="conversion_type" id="typeExisting" value="EXISTING_CLIENT" onchange="toggleOption()">
+            <label class="form-check-label fw-bold text-dark" for="typeExisting">
+              Associate with an Existing Corporate Client
+            </label>
+            <p class="text-muted small mb-3">Link this sales opportunity to an already registered corporate client entity.</p>
+          </div>
+
+          <div id="existingClientFields" class="ps-4 d-none">
+            <label class="form-label fw-semibold small">Select Registered Client <span class="text-danger">*</span></label>
+            {{ form.existing_client }}
+            {% if form.existing_client.errors %}<div class="text-danger small">{{ form.existing_client.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+          <a href="{% url 'clients:lead_detail' lead.pk %}" class="btn btn-light border">Cancel</a>
+          <button type="submit" class="btn btn-success fw-semibold px-4 shadow-sm">
+            <i class="bi bi-check-circle-fill me-1"></i> Finalize Conversion to Client
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleOption() {
+    const isNew = document.getElementById('typeNew').checked;
+    const newFields = document.getElementById('newClientFields');
+    const existingFields = document.getElementById('existingClientFields');
+
+    if (isNew) {
+      newFields.classList.remove('d-none');
+      existingFields.classList.add('d-none');
+    } else {
+      newFields.classList.add('d-none');
+      existingFields.classList.remove('d-none');
+    }
+  }
+</script>
+{% endblock %}

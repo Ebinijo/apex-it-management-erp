@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Departments Directory{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Company Departments</h3>
+      <p class="text-muted small mb-0">Organizational structure, business units, and departmental headcount.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'employees:list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-people-fill me-1"></i> Employees
+      </a>
+      {% if request.user.is_admin_role or request.user.is_hr_role %}
+      <a href="{% url 'employees:department_create' %}" class="btn btn-primary fw-semibold shadow-sm">
+        <i class="bi bi-plus-circle-fill me-1"></i> Add Department
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {% for dept in departments %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fw-bold px-2 py-1">
+              {{ dept.code }}
+            </span>
+            <span class="badge bg-light text-secondary border">
+              <i class="bi bi-people me-1"></i>{{ dept.total_members }} Staff Member{{ dept.total_members|pluralize }}
+            </span>
+          </div>
+
+          <h5 class="fw-bold text-dark mb-2">{{ dept.name }}</h5>
+          <p class="text-secondary small mb-3">
+            {{ dept.description|default:"No description provided for this department." }}
+          </p>
+        </div>
+
+        <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+          <a href="{% url 'employees:list' %}?department={{ dept.id }}" class="small fw-semibold text-primary text-decoration-none">
+            View Members &rarr;
+          </a>
+          {% if request.user.is_admin_role or request.user.is_hr_role %}
+          <div class="btn-group btn-group-sm">
+            <a href="{% url 'employees:department_edit' dept.pk %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Edit Department">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'employees:department_delete' dept.pk %}" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Delete Department">
+              <i class="bi bi-trash"></i>
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+      <div class="card card-custom p-5">
+        <i class="bi bi-diagram-3 fs-1 text-secondary mb-2"></i>
+        <h5 class="fw-bold text-dark">No Departments Configured</h5>
+        <p class="text-muted small mb-3">Get started by creating your company's departments.</p>
+        {% if request.user.is_admin_role or request.user.is_hr_role %}
+        <div>
+          <a href="{% url 'employees:department_create' %}" class="btn btn-primary">Add Department</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

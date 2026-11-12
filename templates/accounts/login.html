@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Enterprise Portal Login{% endblock %}
+
+{% block unauth_content %}
+<div class="row justify-content-center align-items-center min-vh-100 py-4">
+  <div class="col-md-7 col-lg-5 col-xl-4">
+    
+    <!-- Branding Header -->
+    <div class="text-center mb-4">
+      <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle shadow-sm mb-3" style="background: #172554;">
+        <i class="bi bi-cpu-fill text-info fs-1"></i>
+      </div>
+      <h3 class="fw-bold text-dark mb-1">Apex IT Solutions</h3>
+      <p class="text-muted small">Internal Enterprise Company Management System</p>
+    </div>
+
+    <!-- Login Card -->
+    <div class="card card-custom border-0 shadow-lg p-4 p-md-5 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="fw-bold mb-0 text-dark">Sign In</h4>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">Authorized Access Only</span>
+      </div>
+
+      <form method="POST" action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2 small mb-3">
+            {% for error in form.non_field_errors %}
+              <div><i class="bi bi-exclamation-circle-fill me-1"></i>{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Username Field -->
+        <div class="mb-3">
+          <label for="id_username" class="form-label fw-semibold text-secondary small">Username</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-person-fill"></i></span>
+            {{ form.username }}
+          </div>
+          {% if form.username.errors %}
+            <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Password Field -->
+        <div class="mb-4">
+          <label for="id_password" class="form-label fw-semibold text-secondary small">Password</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-lock-fill"></i></span>
+            {{ form.password }}
+          </div>
+          {% if form.password.errors %}
+            <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Submit Button -->
+        <div class="d-grid mb-3">
+          <button type="submit" class="btn btn-primary btn-lg fw-semibold shadow-sm">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Dashboard
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Demonstration Test Credentials Card -->
+    <div class="card border border-light-subtle shadow-sm bg-white p-3 rounded-3">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="fw-bold small text-secondary"><i class="bi bi-key-fill text-warning me-1"></i> Test Role Credentials</span>
+        <span class="badge bg-secondary-subtle text-secondary small" style="font-size: 0.65rem;">One-Click Fill</span>
+      </div>
+      <div class="row g-2">
+        <div class="col-6">
+          <button type="button" class="btn btn-sm btn-outline-danger w-100 text-start" onclick="fillCreds('admin', 'admin123')">
+            <div class="fw-bold small">Admin</div>
+            <div class="text-muted" style="font-size: 0.65rem;">admin / admin123</div>
+          </button>
+        </div>
+        <div class="col-6">
+          <button type="button" class="btn btn-sm btn-outline-warning w-100 text-start text-dark" onclick="fillCreds('hr_manager', 'hr123')">
+            <div class="fw-bold small">HR Manager</div>
+            <div class="text-muted" style="font-size: 0.65rem;">hr_manager / hr123</div>
+          </button>
+        </div>
+        <div class="col-6">
+          <button type="button" class="btn btn-sm btn-outline-info w-100 text-start text-dark" onclick="fillCreds('pm_john', 'pm123')">
+            <div class="fw-bold small">Project Mgr</div>
+            <div class="text-muted" style="font-size: 0.65rem;">pm_john / pm123</div>
+          </button>
+        </div>
+        <div class="col-6">
+          <button type="button" class="btn btn-sm btn-outline-primary w-100 text-start" onclick="fillCreds('dev_alex', 'dev123')">
+            <div class="fw-bold small">Developer</div>
+            <div class="text-muted" style="font-size: 0.65rem;">dev_alex / dev123</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function fillCreds(u, p) {
+    document.getElementById('id_username').value = u;
+    document.getElementById('id_password').value = p;
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee Profile: {{ employee.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Top Action Bar -->
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <a href="{% url 'employees:list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to Directory
+    </a>
+    {% if request.user.is_admin_role or request.user.is_hr_role %}
+    <div class="d-flex gap-2">
+      <a href="{% url 'employees:edit' employee.pk %}" class="btn btn-primary fw-semibold">
+        <i class="bi bi-pencil-square me-1"></i> Edit Profile
+      </a>
+      <a href="{% url 'employees:delete' employee.pk %}" class="btn btn-outline-danger">
+        <i class="bi bi-trash me-1"></i> Delete
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Header Card -->
+  <div class="card card-custom p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #172554 0%, #1E3A8A 100%); color: #FFFFFF;">
+    <div class="d-flex flex-column flex-md-row align-items-md-center gap-4">
+      <div class="position-relative">
+        {% if employee.user.profile_picture %}
+          <img src="{{ employee.user.profile_picture.url }}" alt="{{ employee.full_name }}" class="rounded-circle object-fit-cover shadow border border-3 border-white" width="100" height="100">
+        {% else %}
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow border border-3 border-white" style="width: 100px; height: 100px; font-size: 2.5rem;">
+            {{ employee.user.username|make_list|first|upper }}
+          </div>
+        {% endif %}
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <span class="badge bg-light text-dark font-monospace fw-bold">{{ employee.employee_id }}</span>
+          <span class="badge {{ employee.status_badge_class }}">{{ employee.get_employment_status_display }}</span>
+          <span class="badge bg-info text-dark">{{ employee.user.get_role_display }}</span>
+        </div>
+        <h3 class="fw-bold mb-1">{{ employee.full_name }}</h3>
+        <p class="text-white-50 mb-0 fs-6">{{ employee.designation }} &bull; {{ employee.department.name|default:"Unassigned Department" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Details -->
+    <div class="col-lg-7">
+      <!-- General & Contact Information -->
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-person-lines-fill text-primary me-2"></i>Employee Information
+        </h5>
+        <div class="row g-3 small">
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Corporate Email</span>
+            <span class="fw-semibold text-dark">{{ employee.email|default:"Not specified" }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Phone Number</span>
+            <span class="fw-semibold text-dark">{{ employee.phone|default:"Not specified" }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Department</span>
+            <span class="fw-semibold text-dark">{{ employee.department.name|default:"Unassigned" }} ({{ employee.department.code|default:"—" }})</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Gender</span>
+            <span class="fw-semibold text-dark">{{ employee.get_gender_display }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Date of Joining</span>
+            <span class="fw-semibold text-dark">{{ employee.joining_date|date:"F d, Y" }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted d-block">System Login Username</span>
+            <span class="fw-semibold text-dark font-monospace">@{{ employee.user.username }}</span>
+          </div>
+          <div class="col-12">
+            <span class="text-muted d-block">Residential Address</span>
+            <span class="fw-semibold text-dark">{{ employee.address|default:"No address on record" }}</span>
+          </div>
+          <div class="col-12">
+            <span class="text-muted d-block">Emergency Contact</span>
+            <span class="fw-semibold text-dark">{{ employee.emergency_contact|default:"None provided" }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills Matrix -->
+      <div class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-tools text-info me-2"></i>Technical Skills & Competencies
+        </h5>
+        {% if employee.skills_list %}
+          <div class="d-flex flex-wrap gap-2">
+            {% for skill in employee.skills_list %}
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6">
+                <i class="bi bi-check2 me-1"></i>{{ skill }}
+              </span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">No technical skills recorded for this employee.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right Column: Recent Leaves & Activity -->
+    <div class="col-lg-5">
+      <div class="card card-custom p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-calendar2-week text-warning me-2"></i>Leave History
+          </h5>
+          <a href="{% url 'employees:leave_apply' %}" class="btn btn-sm btn-outline-primary">Apply Leave</a>
+        </div>
+
+        {% if recent_leaves %}
+          <div class="list-group list-group-flush">
+            {% for leave in recent_leaves %}
+              <div class="list-group-item px-0 py-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-bold text-dark small">{{ leave.get_leave_type_display }}</span>
+                  <span class="badge {{ leave.status_badge_class }}">{{ leave.get_status_display }}</span>
+                </div>
+                <div class="text-muted small mb-1">
+                  <i class="bi bi-calendar3 me-1"></i>{{ leave.start_date|date:"M d, Y" }} &rarr; {{ leave.end_date|date:"M d, Y" }} ({{ leave.duration_days }} day{{ leave.duration_days|pluralize }})
+                </div>
+                <p class="text-secondary small mb-1 fst-italic">"{{ leave.reason }}"</p>
+                {% if leave.admin_remarks %}
+                  <div class="p-2 bg-light rounded small mt-1">
+                    <strong>Admin Note:</strong> {{ leave.admin_remarks }}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0 py-3 text-center">No leave applications on record.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
